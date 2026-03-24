@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>容量與容積拔河大賽</title>
+    <style>
+        body { font-family: Arial, sans-serif; text-align: center; background-color: #f0f8ff; }
+        #game-container { max-width: 800px; margin: auto; padding: 20px; }
+        
+        /* 拔河繩子視覺 */
+        #tug-of-war-arena { position: relative; height: 100px; background: #eee; border: 2px solid #333; margin: 20px 0; overflow: hidden; display: flex; align-items: center; justify-content: center; }
+        #rope { position: absolute; width: 200%; height: 10px; background: #8B4513; transition: all 0.5s ease; }
+        #center-marker { position: absolute; width: 20px; height: 40px; background: red; left: 50%; transform: translateX(-50%); z-index: 2; }
+
+        .team-label { display: flex; justify-content: space-between; font-weight: bold; font-size: 24px; }
+        .blue { color: blue; } .red { color: red; }
+
+        #question-area { font-size: 32px; margin: 30px 0; padding: 20px; background: white; border-radius: 10px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
+        input { font-size: 24px; width: 150px; text-align: center; }
+        button { font-size: 20px; padding: 10px 20px; cursor: pointer; background: #4CAF50; color: white; border: none; border-radius: 5px; }
+        
+        .difficulty-btn { margin: 10px; padding: 5px 15px; }
+        .active { background: #333; }
+    </style>
+</head>
+<body>
+
+<div id="game-container">
+    <h1>容量與容積換算拔河</h1>
+    
+    <div>
+        <button class="difficulty-btn active" id="btn-easy" onclick="setDifficulty('easy')">基礎 (整數)</button>
+        <button class="difficulty-btn" id="btn-hard" onclick="setDifficulty('hard')">進階 (小數)</button>
+    </div>
+
+    <div class="team-label">
+        <span class="blue">藍隊 (左)</span>
+        <span class="red">紅隊 (右)</span>
+    </div>
+
+    <div id="tug-of-war-arena">
+        <div id="center-marker"></div>
+        <div id="rope" style="left: -50%;"></div>
+    </div>
+
+    <div id="question-area">
+        <span id="q-text">載入題目中...</span>
+        <br><br>
+        <input type="number" id="user-answer" placeholder="填入數字">
+        <button onclick="checkAnswer()">提交答案</button>
+    </div>
+
+    <p id="feedback"></p>
+</div>
+
+<script>
+    const units = [
+        { name: '立方公尺', ratio: 1000000 },
+        { name: '立方公分', ratio: 1 },
+        { name: '公升', ratio: 1000 },
+        { name: '毫升', ratio: 1 }
+    ];
+
+    let currentQuestion = {};
+    let difficulty = 'easy';
+    let ropePosition = 0; // 0 是中間, 負數向左(藍), 正數向右(紅)
+
+    function setDifficulty(lvl) {
+        difficulty = lvl;
+        document.querySelectorAll('.difficulty-btn').forEach(b => b.classList.remove('active'));
+        document.getElementById('btn-' + lvl).classList.add('active');
+        nextQuestion();
+    }
+
+    function nextQuestion() {
+        // 隨機抓兩個不同的單位
+        let u1_idx = Math.floor(Math.random() * units.length);
+        let u2_idx;
+        do { u2_idx = Math.floor(Math.random() * units.length); } while (u1_idx === u2_idx);
+
+        let unitFrom = units[u1_idx];
+        let unitTo = units[u2_idx];
+
+        // 產生題目數值
+        let val = (difficulty === 'easy') 
+            ? Math.floor(Math.random() * 20) + 1 
+            : (Math.random() * 10 + 0.1).toFixed(1);
+
+        // 計算正確答案：(原數值 * 原單位比例) / 目標單位比例
+        let correctAnswer = (val * unitFrom.ratio) / unitTo.ratio;
+
+        currentQuestion = {
+            val: val,
+            from: unitFrom.name,
+            to: unitTo.name,
+            answer: parseFloat(correctAnswer.toFixed(4)) // 處理浮點數精度
+        };
+
+        document.getElementById('q-text').innerText = `${val} ${unitFrom.name} = ( ? ) ${unitTo.name}`;
+        document.getElementById('user-answer').value = '';
+        document.getElementById('feedback').innerText = '';
+    }
+
+    function checkAnswer() {
+        let userAnswer = parseFloat(document.getElementById('user-answer').value);
+        let rope = document.getElementById('rope');
+
+        if (userAnswer === currentQuestion.answer) {
+            document.getElementById('feedback').innerText = "正確！繩子往你這邊拉了！";
+            document.getElementById('feedback').style.color = "green";
+            // 這裡假設是玩家在玩，預設幫藍隊加分
+            ropePosition -= 10; 
+        } else {
+            document.getElementById('feedback').innerText = `錯誤！正確答案是 ${currentQuestion.answer}`;
+            document.getElementById('feedback').style.color = "red";
+            ropePosition += 10; // 答錯則紅隊拉走
+        }
+
+        // 更新繩子位置
+        rope.style.transform = `translateX(${ropePosition}px)`;
+        
+        // 延遲出下一題
+        setTimeout(nextQuestion, 1500);
+    }
+
+    // 初始化第一題
+    nextQuestion();
+</script>
+
+</body>
+</html>
