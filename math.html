@@ -1,21 +1,9 @@
-這是一個非常實用的建議！在實際教學現場，學生在大螢幕上操作時，難免會按錯數字，多一個 Backspace (退格鍵) 能讓比賽流暢度大幅提升，不用每次按錯都要整題清空（X）。
-
-我已經將以下功能整合進最新的程式碼：
-
-觸控優化 (Pointer Events)：改用 onpointerdown 並加入 preventDefault，解決多點觸控衝突與點擊延遲，確保兩位學生能同時輸入。
-
-新增 Backspace (⌫)：在小算盤加入退格鍵，方便修正最後一個數位。
-
-介面調整：優化了按鈕佈局，讓 ⌫、X 和 OK 更有辨識度。
-
-完整優化版程式碼 (index.html)
-HTML
 <!DOCTYPE html>
 <html lang="zh-Hant">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>容量與容積換算對抗賽 - 觸控優化版</title>
+    <title>容量與容積換算對抗賽 - 完整優化版</title>
     <style>
         :root { --blue: #3498db; --red: #e74c3c; --rope-brown: #8b4513; }
         body { font-family: 'Microsoft JhengHei', sans-serif; margin: 0; background-color: #f0f3f5; user-select: none; overflow: hidden; touch-action: none; }
@@ -52,15 +40,15 @@ HTML
         .question-card { background: white; width: 92%; padding: 15px; border-radius: 12px; text-align: center; box-shadow: 0 4px 8px rgba(0,0,0,0.1); border: 2px solid transparent; }
         .display-box { height: 50px; line-height: 50px; font-size: 32px; background: #f8f9fa; margin-top: 12px; border-radius: 8px; font-weight: bold; color: #333; border: 1px inset #ddd; overflow: hidden; }
 
-        /* 鍵盤優化 */
+        /* 鍵盤樣式 */
         .numpad { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; width: 280px; margin-top: 15px; }
         .key { padding: 18px 0; font-size: 24px; font-weight: bold; border: none; border-radius: 10px; cursor: pointer; background: white; box-shadow: 0 4px 0 #ccc; touch-action: none; }
         .key:active { transform: translateY(3px); box-shadow: 0 1px 0 #ccc; }
         .key-ok { color: white; grid-column: span 1; }
         .t1-ok { background: var(--blue); box-shadow: 0 4px 0 #2980b9; }
         .t2-ok { background: var(--red); box-shadow: 0 4px 0 #c0392b; }
-        .key-del { background: #f39c12; color: white; box-shadow: 0 4px 0 #d35400; } /* Backspace */
-        .key-clear { background: #95a5a6; color: white; box-shadow: 0 4px 0 #7f8c8d; } /* 全清 */
+        .key-del { background: #f39c12; color: white; box-shadow: 0 4px 0 #d35400; }
+        .key-clear { background: #95a5a6; color: white; box-shadow: 0 4px 0 #7f8c8d; }
     </style>
 </head>
 <body>
@@ -80,7 +68,7 @@ HTML
                 <option value="60">1 分鐘</option>
                 <option value="120">2 分鐘</option>
                 <option value="180" selected>3 分鐘</option>
-                <option value="300">5 分鐘</option>
+                <option value="240">4 分鐘</option> <option value="300">5 分鐘</option>
             </select>
         </p>
     </div>
@@ -90,7 +78,7 @@ HTML
 <div id="top-bar">
     <button class="back-btn" onpointerdown="resetGame()">⬅ 返回選單</button>
     <div id="timer-display">剩餘時間：03:00</div>
-    <div id="status-info">雙人對戰模式</div>
+    <div id="status-info">雙人觸控模式</div>
 </div>
 
 <div id="game-screen" style="display:none;">
@@ -164,7 +152,6 @@ HTML
         ['t1', 't2'].forEach(team => {
             const container = document.getElementById(team === 't1' ? 'pad1' : 'pad2');
             container.innerHTML = "";
-            // 鍵盤配置：數字、小數點、退格(⌫)、清除(X)、確認(OK)
             const keys = ['1','2','3','4','5','6','7','8','9','.', '0', '⌫', 'X', 'OK'];
             keys.forEach(k => {
                 const btn = document.createElement('button');
@@ -174,7 +161,6 @@ HTML
                 else if(k === '⌫') btn.classList.add('key-del');
                 else if(k === 'X') btn.classList.add('key-clear');
                 
-                // 使用 onpointerdown 優化多點觸控反應
                 btn.onpointerdown = (e) => {
                     e.preventDefault();
                     handleInput(team, k);
@@ -223,7 +209,7 @@ HTML
             data.input = data.input.slice(0, -1);
         } else {
             if(key === '.' && data.input.includes('.')) return;
-            if(data.input.length < 8) data.input += key;
+            if(data.input.length < 10) data.input += key;
         }
         updateUI();
     }
@@ -233,12 +219,13 @@ HTML
         let card = document.getElementById(team === 't1' ? 'card1' : 'card2');
         
         if(parseFloat(data.input) === data.ans) {
+            // 答對得分並大力拉繩子
             if(team === 't1') { game.t1Score++; game.offset -= 50; }
             else { game.t2Score++; game.offset += 50; }
             card.style.borderColor = "#2ecc71";
             setTimeout(() => { card.style.borderColor = "transparent"; newQ(team === 't1' ? 1 : 2); }, 300);
         } else {
-            // 答錯：對方拉動
+            // 答錯對方受益
             if(team === 't1') { game.offset += 25; }
             else { game.offset -= 25; }
             card.style.borderColor = "#e74c3c";
@@ -272,7 +259,7 @@ HTML
     function endGame(winner) {
         clearInterval(game.timer);
         setTimeout(() => {
-            alert("🎊 比賽結束 🎊\n結果：" + (winner === "平手" ? "雙方平分秋色！" : winner + " 獲得了勝利！"));
+            alert("🎊 比賽結束 🎊\n結果：" + (winner === "平手" ? "雙方平手！" : winner + " 獲得了勝利！"));
             resetGame();
         }, 100);
     }
